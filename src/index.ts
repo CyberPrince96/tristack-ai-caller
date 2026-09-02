@@ -65,6 +65,7 @@ export { localeTag, languageOf, normLocale, WORD_CHAR } from './voice/locale'
 export {
   setupIncomingCalls,
   displayIncomingCall,
+  handleIncomingCallPush,
   answerIncomingCall,
   endIncomingCall,
   releaseCallAudio,

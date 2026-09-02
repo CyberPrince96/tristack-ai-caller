@@ -220,6 +220,24 @@ await displayIncomingCall({ callId, callerName: 'Sankalp' })
 > *conversation*. That's why the ring is a separate opt-in module — it can't disturb
 > the loop unless you wire it, and even then you release the audio at hand-off.
 
+**Killed-app ring — register the handler at your ENTRY (this is the #1 gotcha).** A
+backgrounded/killed app wakes a **headless** JS context that does not render your
+components, so a handler registered inside a component/effect never runs and the OS
+shows a plain fallback notification instead of the full-screen ring. Register it at
+module scope in `index.js` and call `handleIncomingCallPush`:
+
+```ts
+// index.js — BEFORE your normal entry import
+import messaging from '@react-native-firebase/messaging'
+import { handleIncomingCallPush } from 'tristack-ai-caller'
+messaging().setBackgroundMessageHandler(async (m) => { await handleIncomingCallPush(m.data) })
+import 'expo-router/entry'
+```
+
+Send the push **data-only** (no FCM `notification` block) so your handler runs
+instead of a system fallback. (`expo-notifications` works too — define the task at
+entry scope, not in a component; see `handleIncomingCallPush`'s doc comment.)
+
 **Native setup (host app):** Android — `MANAGE_OWN_CALLS`, `FOREGROUND_SERVICE`(+`_MICROPHONE`),
 `USE_FULL_SCREEN_INTENT`; CallKeep's `VoiceConnectionService` `<service>`; `MainActivity`
 `showWhenLocked`/`turnScreenOn`; a **data-only** FCM push to wake the app and call

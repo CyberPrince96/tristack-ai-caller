@@ -179,6 +179,72 @@ export async function displayIncomingCall(opts: DisplayIncomingCallOptions): Pro
   }
 }
 
+/**
+ * Handle a `voice_call` push and paint the ring. Call this from your app's
+ * background message handler when a call push arrives. Returns true if it was a
+ * voice_call push (and the ring was shown).
+ *
+ * ── ⚠️ REGISTER THIS AT YOUR APP ENTRY, NOT IN A COMPONENT ─────────────────────
+ * For a BACKGROUNDED or KILLED app the push wakes a HEADLESS JS context that does
+ * NOT render your React tree — so a handler registered inside a component/effect
+ * never runs, and the OS shows a plain fallback notification instead of the
+ * full-screen ring (the exact "No task registered" trap). Register it at module
+ * scope in your JS entry (e.g. `index.js`). Two proven patterns:
+ *
+ *   // index.js — RECOMMENDED: @react-native-firebase/messaging (most reliable
+ *   // killed-app path). Register BEFORE your normal entry import:
+ *   import messaging from '@react-native-firebase/messaging'
+ *   import { handleIncomingCallPush } from 'tristack-ai-caller'
+ *   messaging().setBackgroundMessageHandler(async (m) => { await handleIncomingCallPush(m.data) })
+ *   import 'expo-router/entry'
+ *
+ *   // OR expo-notifications — define the task at ENTRY scope (not in a component):
+ *   import * as TaskManager from 'expo-task-manager'
+ *   import * as Notifications from 'expo-notifications'
+ *   import { handleIncomingCallPush } from 'tristack-ai-caller'
+ *   TaskManager.defineTask('VOICE_CALL_BG', ({ data }) => handleIncomingCallPush(data))
+ *   Notifications.registerTaskAsync('VOICE_CALL_BG')
+ *   import 'expo-router/entry'
+ *
+ * Send the push as DATA-ONLY (no FCM `notification` block) so your handler runs
+ * instead of the system auto-displaying a plain notification.
+ */
+export async function handleIncomingCallPush(data: unknown): Promise<boolean> {
+  const d = normalizePushData(data)
+  if (!d || d.type !== 'voice_call') return false
+  await displayIncomingCall({
+    callId: typeof d.callId === 'string' && d.callId ? d.callId : `ring_${Date.now()}`,
+    callerName: typeof d.callerName === 'string' ? d.callerName : 'Incoming call',
+    title: typeof d.title === 'string' ? d.title : undefined,
+    body: typeof d.body === 'string' ? d.body : undefined,
+  })
+  return true
+}
+
+interface PushData {
+  type?: unknown
+  callId?: unknown
+  callerName?: unknown
+  title?: unknown
+  body?: unknown
+}
+
+/** Accept flat `{ type, callId, … }`, nested `{ data: {...} }`, or a `dataString`
+ *  JSON blob (different push transports shape the payload differently). */
+function normalizePushData(data: unknown): PushData | null {
+  if (!data || typeof data !== 'object') return null
+  const obj = data as Record<string, unknown>
+  const inner = (obj.data && typeof obj.data === 'object' ? obj.data : obj) as Record<string, unknown>
+  if (typeof inner.dataString === 'string') {
+    try {
+      return JSON.parse(inner.dataString) as PushData
+    } catch {
+      /* not JSON — fall through */
+    }
+  }
+  return inner as PushData
+}
+
 /** Sync Telecom to ANSWERED (call from your notifee "Accept" handler). Immediately
  *  follow with `releaseCallAudio()` before starting the voice loop. */
 export function answerIncomingCall(callId: string): void {
