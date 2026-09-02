@@ -224,19 +224,62 @@ await displayIncomingCall({ callId, callerName: 'Sankalp' })
 backgrounded/killed app wakes a **headless** JS context that does not render your
 components, so a handler registered inside a component/effect never runs and the OS
 shows a plain fallback notification instead of the full-screen ring. Register it at
-module scope in `index.js` and call `handleIncomingCallPush`:
+module scope in `index.js` and call `handleIncomingCallPush`. Use the **modular**
+`@react-native-firebase/messaging` API (v22+ is modular-first; **v26 is modular-only
+— the `messaging()` default export is gone**):
 
 ```ts
 // index.js — BEFORE your normal entry import
-import messaging from '@react-native-firebase/messaging'
+import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging'
 import { handleIncomingCallPush } from 'tristack-ai-caller'
-messaging().setBackgroundMessageHandler(async (m) => { await handleIncomingCallPush(m.data) })
+
+setBackgroundMessageHandler(getMessaging(), async (m) => {
+  await handleIncomingCallPush(m.data)
+})
+
 import 'expo-router/entry'
+// (On RNFirebase < v22 the namespaced `messaging().setBackgroundMessageHandler(...)`
+//  still works; on v26 you MUST use the modular form above.)
 ```
 
 Send the push **data-only** (no FCM `notification` block) so your handler runs
-instead of a system fallback. (`expo-notifications` works too — define the task at
-entry scope, not in a component; see `handleIncomingCallPush`'s doc comment.)
+instead of a system fallback. `@react-native-firebase/messaging` must be the app's
+**only** `FirebaseMessagingService`: if a second push library (e.g. `expo-notifications`)
+also registers one, exactly one service wins the `MESSAGING_EVENT` dispatch and the
+other's JS handler silently never fires — pick one owner.
+
+### Hard-won gotchas (from shipping this over the lock screen)
+
+These bit us on a real device; they will bite you too:
+
+- **A freshly-installed / updated / force-stopped app receives NO FCM at all** until
+  it is opened **once**. Android puts it in the "stopped state" and drops every
+  broadcast (you'll see `GCM … RECEIVE … result=CANCELLED` in logcat). So the
+  killed-app ring only works after the user has launched the app at least once since
+  install — and when **testing**, never simulate "killed" with `adb shell am
+  force-stop` (that re-enters the stopped state and blocks the push). Use `adb shell
+  am kill <pkg>` or swipe it from Recents instead.
+- **notifee `vibrationPattern` must be an EVEN count of POSITIVE values.** A leading
+  `0` (e.g. `[0, 500, 500, 500]`) throws `expected an array containing an even number
+  of positive values` **inside the headless handler**, which aborts the entire ring
+  with no notification shown. Use `[500, 1000, 500, 1000]`.
+- **The full-screen intent launches your Activity — it is not itself a call UI.** On a
+  locked/off screen Android fires the `fullScreenAction`'s `launchActivity` (your
+  `MainActivity`) and does **not** draw the notification. So your app must detect the
+  ring launch on startup and route to your own incoming-call screen (Accept/Decline);
+  otherwise the user just sees your home screen wake up.
+- **Play the ringtone from that screen, not the channel.** Once the full-screen
+  Activity launches, Android suppresses the notification channel's sound — so a
+  looping ring must be played by your ring screen (e.g. `expo-audio` looping
+  `content://settings/system/ringtone` for the device's own ringtone). The notifee
+  channel sound only rings in states where the Activity is not launched.
+- **Verify on a RELEASE build.** A debug build can't reliably run the killed-app push
+  handler (it needs Metro).
+
+(`expo-notifications` can drive the background task too — define it at entry scope,
+not in a component — but a data-only push on a dozing device can outlive its task
+window; `setBackgroundMessageHandler` is the reliable path. See
+`handleIncomingCallPush`'s doc comment.)
 
 **Native setup (host app):** Android — `MANAGE_OWN_CALLS`, `FOREGROUND_SERVICE`(+`_MICROPHONE`),
 `USE_FULL_SCREEN_INTENT`; CallKeep's `VoiceConnectionService` `<service>`; `MainActivity`

@@ -192,11 +192,14 @@ export async function displayIncomingCall(opts: DisplayIncomingCallOptions): Pro
  * scope in your JS entry (e.g. `index.js`). Two proven patterns:
  *
  *   // index.js — RECOMMENDED: @react-native-firebase/messaging (most reliable
- *   // killed-app path). Register BEFORE your normal entry import:
- *   import messaging from '@react-native-firebase/messaging'
+ *   // killed-app path). Register BEFORE your normal entry import. Use the
+ *   // MODULAR API — v22+ is modular-first and v26 is modular-ONLY (the
+ *   // `messaging()` default export is gone):
+ *   import { getMessaging, setBackgroundMessageHandler } from '@react-native-firebase/messaging'
  *   import { handleIncomingCallPush } from 'tristack-ai-caller'
- *   messaging().setBackgroundMessageHandler(async (m) => { await handleIncomingCallPush(m.data) })
+ *   setBackgroundMessageHandler(getMessaging(), async (m) => { await handleIncomingCallPush(m.data) })
  *   import 'expo-router/entry'
+ *   // (RNFirebase < v22 also accepts the namespaced messaging().setBackgroundMessageHandler.)
  *
  *   // OR expo-notifications — define the task at ENTRY scope (not in a component):
  *   import * as TaskManager from 'expo-task-manager'
@@ -207,7 +210,24 @@ export async function displayIncomingCall(opts: DisplayIncomingCallOptions): Pro
  *   import 'expo-router/entry'
  *
  * Send the push as DATA-ONLY (no FCM `notification` block) so your handler runs
- * instead of the system auto-displaying a plain notification.
+ * instead of the system auto-displaying a plain notification. Make RNFirebase the
+ * app's ONLY FirebaseMessagingService — if a second push lib also registers one,
+ * exactly one wins the MESSAGING_EVENT dispatch and the other's handler never runs.
+ *
+ * ── ⚠️ FOUR THINGS THAT SILENTLY BREAK THE KILLED-APP RING ─────────────────────
+ *  1. A freshly INSTALLED/UPDATED/force-stopped app gets NO FCM until it is opened
+ *     ONCE (Android's "stopped state" drops every broadcast). Testing tip: simulate
+ *     "killed" with `adb shell am kill <pkg>` or swipe from Recents — NOT
+ *     `am force-stop`, which re-enters the stopped state and blocks the push.
+ *  2. A notifee `vibrationPattern` must be an EVEN count of POSITIVE values — a
+ *     leading 0 throws in the headless handler and aborts the whole ring.
+ *  3. The full-screen intent LAUNCHES YOUR ACTIVITY (it is not itself a call UI).
+ *     Detect the ring on startup — e.g. `notifee.getDisplayedNotifications()` for
+ *     your ongoing ring id (getInitialNotification is set only on a PRESS, not a
+ *     full-screen launch) — and route to your own Accept/Decline screen.
+ *  4. Once that Activity launches, Android suppresses the channel sound; play a
+ *     looping ringtone from the ring screen (or keep the channel's loopSound for
+ *     the states where no Activity launches).
  */
 export async function handleIncomingCallPush(data: unknown): Promise<boolean> {
   const d = normalizePushData(data)
