@@ -51,6 +51,23 @@ Add the recognizer config plugin + mic permission (Expo):
 
 ---
 
+## Get a Tristack Manifold key
+
+Tristack AI Caller works with any LLM, but it's built for **Tristack Manifold** — an
+Anthropic-compatible gateway.
+
+1. **Sign up** at **<https://tristack.tech>** and create a Manifold API key (a
+   `tsk_…` token).
+2. **Read the docs** — API reference, model list, and aliases (`haiku-4-5`,
+   `sonnet-4-6`, `opus-4-6`) — at **<https://docs.tristack.tech>**.
+3. **Gateway base URL:** `https://api.tristack.tech/v1/manifold` (pass it as `baseUrl`).
+4. **Never ship the key in the app.** Serve a short-lived token from your backend via
+   `getAuthToken`, or use `createRelayTransport` so the key stays server-side.
+
+> **Links:** Website · <https://tristack.tech>  |  Docs · <https://docs.tristack.tech>
+
+---
+
 ## Quick start
 
 ```tsx
@@ -60,7 +77,7 @@ import { View, Text, Pressable } from 'react-native'
 // Bring your own transport. NEVER hardcode a key — fetch the token from your
 // server / secure store. (In production prefer createRelayTransport, below.)
 const transport = createManifoldTransport({
-  baseUrl: 'https://your-manifold-gateway.example.com/v1/manifold',
+  baseUrl: 'https://api.tristack.tech/v1/manifold',
   model: 'haiku-4-5',
   system: 'You are a warm, concise voice assistant. Keep replies short.',
   getAuthToken: async () => await fetchMyShortLivedToken(),

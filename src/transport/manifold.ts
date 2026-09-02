@@ -12,7 +12,7 @@
 import type { VoiceTransport, TurnMessage } from '../types'
 
 export interface ManifoldTransportConfig {
-  /** Manifold base URL, e.g. `"https://your-manifold-gateway.example.com/v1/manifold"`. No trailing slash needed. */
+  /** Manifold base URL, e.g. `"https://api.tristack.tech/v1/manifold"`. No trailing slash needed. */
   baseUrl: string
   /** Model or Manifold alias, e.g. `"haiku-4-5"`, `"sonnet-4-6"`, `"opus-4-6"`. */
   model: string
