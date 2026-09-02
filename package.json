@@ -1,6 +1,6 @@
 {
   "name": "tristack-ai-caller",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Tristack AI Caller — a continuous, hands-free, on-device STT⇄TTS voice-call loop for any React Native / Expo app. Credential-free; bring your own LLM transport (Manifold adapter included).",
   "keywords": [
     "react-native",
@@ -57,6 +57,12 @@
       "optional": true
     },
     "expo-web-browser": {
+      "optional": true
+    },
+    "react-native-callkeep": {
+      "optional": true
+    },
+    "@notifee/react-native": {
       "optional": true
     }
   },

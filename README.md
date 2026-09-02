@@ -186,6 +186,46 @@ ended`), `partial`, `turns`, `muted`, `ttsMuted`, `start()`, `stop()`,
   settles from the best partial if no terminal fired; a hard cap guarantees the
   turn always moves on.
 
+## Incoming calls — ring over the lock screen (optional)
+
+Add a WhatsApp/Telegram-style **full-screen ring** (push-triggered), fully decoupled
+from the voice loop. Install the optional peers:
+
+```sh
+npm i react-native-callkeep @notifee/react-native
+```
+
+```ts
+import { setupIncomingCalls, displayIncomingCall, releaseCallAudio } from 'tristack-ai-caller'
+
+// once at app init:
+await setupIncomingCalls({
+  appName: 'My App',
+  onAnswer: (callId) => {
+    releaseCallAudio()             // ⚠️ FIRST — free the mic (see the rule below)
+    goToCallScreen(callId)         // then useVoiceLoop().start() there
+  },
+  onDecline: (callId) => {/* dismiss */},
+})
+
+// from your DATA-ONLY push handler, when a call arrives:
+await displayIncomingCall({ callId, callerName: 'Sankalp' })
+```
+
+> ### ⚠️ The one rule — don't skip it
+> A CallKeep/Telecom call that goes **active** forces `MODE_IN_CALL` and hands the mic
+> to the phone-call subsystem — which **starves the STT loop** (the mic captures
+> nothing). So **`releaseCallAudio()` the moment the user answers, BEFORE
+> `voiceLoop.start()`**. CallKeep is only for the *ring*; `useVoiceLoop` owns the
+> *conversation*. That's why the ring is a separate opt-in module — it can't disturb
+> the loop unless you wire it, and even then you release the audio at hand-off.
+
+**Native setup (host app):** Android — `MANAGE_OWN_CALLS`, `FOREGROUND_SERVICE`(+`_MICROPHONE`),
+`USE_FULL_SCREEN_INTENT`; CallKeep's `VoiceConnectionService` `<service>`; `MainActivity`
+`showWhenLocked`/`turnScreenOn`; a **data-only** FCM push to wake the app and call
+`displayIncomingCall()`. A **debug** build can't reliably run the killed-app push handler
+(it needs Metro) — verify on a **release** build.
+
 ## Platforms
 
 Works on **iOS and Android**. On iOS, add the two `Info.plist` keys shown in

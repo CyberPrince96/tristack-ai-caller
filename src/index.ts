@@ -58,3 +58,17 @@ export {
 } from './voice/stt'
 export { enterCommAudioMode, resetAudioMode, hasAudioSessionControl } from './voice/audio'
 export { localeTag, languageOf, normLocale, WORD_CHAR } from './voice/locale'
+
+// ── Incoming call (OPTIONAL) — WhatsApp/Telegram-style full-screen ring over the
+//    lock screen. Fully decoupled from the voice loop; native peers are guarded.
+//    ⚠️ Call releaseCallAudio() the moment the user answers, BEFORE voiceLoop.start().
+export {
+  setupIncomingCalls,
+  displayIncomingCall,
+  answerIncomingCall,
+  endIncomingCall,
+  releaseCallAudio,
+  endAllCalls,
+  isIncomingCallSupported,
+} from './ring/incomingCall'
+export type { IncomingCallConfig, DisplayIncomingCallOptions } from './ring/incomingCall'
