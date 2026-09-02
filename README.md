@@ -5,9 +5,13 @@ Native / Expo app — the "talk to your app like a phone call" experience, as a
 drop-in hook.
 
 - 🎙️ **Hands-free.** Speak, it replies, it listens again — no tap between turns.
-- 🔒 **On-device speech.** STT + TTS run on the phone; **no audio ever leaves the
-  device.** The only thing sent is the recognized *text*, through a transport you
-  inject.
+- 📱 **iOS + Android.** `SFSpeechRecognizer`/`AVSpeechSynthesizer` on iOS,
+  `SpeechRecognizer`/system TTS on Android — one JS API over both.
+- 🔒 **Private option.** TTS is on-device. STT can run **fully on-device** with
+  `stt: { requiresOnDevice: true }` (nothing leaves the phone) where the device
+  supports it; the default uses the platform recognizer (which may transcribe on
+  Google/Apple servers). Either way, the only thing your *transport* sends is the
+  recognized **text**.
 - 🔑 **Credential-free.** The package hardcodes **no key and no endpoint**. Bring
   your own LLM transport — a **Manifold** adapter (Anthropic-compatible) and a
   **server-relay** adapter are included, or supply your own function.
@@ -156,10 +160,25 @@ ended`), `partial`, `turns`, `muted`, `ttsMuted`, `start()`, `stop()`,
   settles from the best partial if no terminal fired; a hard cap guarantees the
   turn always moves on.
 
+## Platforms
+
+Works on **iOS and Android**. On iOS, add the two `Info.plist` keys shown in
+Install (mic + speech-recognition usage). Notes:
+
+- **On-device / privacy:** pass `stt: { requiresOnDevice: true }` to keep
+  recognition on the phone (iOS 13+ / supported Android). Check first with
+  `supportsOnDevice()`. The default (`false`) uses the platform recognizer, which
+  may send audio to Google/Apple for transcription.
+- The engine is **Android-proven and iOS-capable**; the recognizer tuning
+  (continuous mode + VAD endpoint) uses the cross-platform `volumechange` VAD, so
+  it applies to both. iOS-specific tuning is exposed via `TurnListenOptions` if you
+  want to adjust `trailingSilenceMs` / `maxListenMs` per platform.
+
 ## Privacy & billing
 
-- **No audio leaves the device.** STT and TTS are on-device.
 - **No credentials in the package.** You inject the transport and its token.
+- **Text-only egress.** The only thing sent off-device is the recognized text,
+  through your transport (audio stays on-device when `requiresOnDevice: true`).
 - **Metering / gating are yours.** Put them on your relay server; the package
   never bills and never executes side-effects.
 

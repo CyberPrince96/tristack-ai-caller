@@ -1,12 +1,13 @@
 /**
  * Tristack AI Caller — shared types.
  *
- * SCOPE: this package is a FREE + fully on-device speech layer wired to a
- * host-supplied LLM transport. STT (`expo-speech-recognition`) transcribes the
- * user's speech to text ON THE DEVICE; TTS (`expo-speech`) reads the reply back
- * ON THE DEVICE. No audio ever leaves the phone. The only thing that leaves is
- * the recognized TEXT, sent through the transport YOU inject — the package holds
- * ZERO credentials and ZERO endpoints of its own.
+ * SCOPE: this package is an on-device speech layer (iOS SFSpeechRecognizer /
+ * Android SpeechRecognizer for STT; AVSpeechSynthesizer / system TTS for TTS)
+ * wired to a host-supplied LLM transport. TTS is always on-device. STT runs fully
+ * on-device when you pass `requiresOnDevice: true` (nothing leaves the phone);
+ * the default uses the platform recognizer, which may transcribe on the vendor's
+ * servers. Either way the only thing sent through the transport is the recognized
+ * TEXT — the package holds ZERO credentials and ZERO endpoints of its own.
  */
 
 /** A BCP-47 locale tag, e.g. `"en-US"`, `"en-IN"`, `"hi-IN"`, `"es-ES"`. */
