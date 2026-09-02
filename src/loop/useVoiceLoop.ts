@@ -23,6 +23,7 @@ import type {
 import { startTurnListen, type TurnListenOptions } from '../voice/duplex'
 import { speak, stopSpeaking } from '../voice/tts'
 import { enterCommAudioMode, resetAudioMode } from '../voice/audio'
+import { hasMicPermission, requestMicPermission } from '../voice/stt'
 
 export interface UseVoiceLoopConfig {
   /** How a turn reaches your LLM (Manifold adapter, relay adapter, or your own). */
@@ -309,10 +310,29 @@ export function useVoiceLoop(config: UseVoiceLoopConfig): VoiceLoopController {
     activeRef.current = true
     seqRef.current += 1
     setPhase('connecting')
-    if (audioSession) void enterCommAudioMode()
-    if (opening && opening.trim()) void speakOpening(opening.trim())
-    else beginListen()
-  }, [audioSession, beginListen, opening, speakOpening])
+    void (async () => {
+      // Ensure mic permission UP FRONT — prompt once on start rather than letting
+      // the first listen fail with 'not-allowed'. Also make sure a recognizer even
+      // exists on this device. If denied/unavailable, park in idle with a clear
+      // error instead of silently doing nothing.
+      try {
+        const granted = (await hasMicPermission()) || (await requestMicPermission())
+        if (!activeRef.current) return
+        if (!granted) {
+          onError?.('Microphone permission was denied.')
+          setPhase('idle')
+          startedRef.current = false
+          return
+        }
+      } catch {
+        /* fall through — startTurnListen still guards and reports via onError */
+      }
+      if (!activeRef.current) return
+      if (audioSession) void enterCommAudioMode()
+      if (opening && opening.trim()) void speakOpening(opening.trim())
+      else beginListen()
+    })()
+  }, [audioSession, beginListen, onError, opening, speakOpening])
 
   const stop = useCallback(() => {
     teardown()

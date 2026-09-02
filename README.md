@@ -49,6 +49,15 @@ Add the recognizer config plugin + mic permission (Expo):
 }
 ```
 
+**Permissions at runtime:** `useVoiceLoop` **requests the mic permission automatically
+on `start()`** — if the user denies it, the loop parks in `idle` and fires `onError`
+(it never silently no-ops). You can also request it earlier yourself:
+
+```ts
+import { hasMicPermission, requestMicPermission } from 'tristack-ai-caller'
+const ok = (await hasMicPermission()) || (await requestMicPermission())
+```
+
 ---
 
 ## Get a Tristack Manifold key
