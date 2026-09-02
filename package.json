@@ -1,0 +1,76 @@
+{
+  "name": "tristack-ai-caller",
+  "version": "0.1.0",
+  "description": "Tristack AI Caller — a continuous, hands-free, on-device STT⇄TTS voice-call loop for any React Native / Expo app. Credential-free; bring your own LLM transport (Manifold adapter included).",
+  "keywords": [
+    "react-native",
+    "expo",
+    "voice",
+    "speech-to-text",
+    "text-to-speech",
+    "stt",
+    "tts",
+    "assistant",
+    "manifold",
+    "anthropic",
+    "llm",
+    "hands-free",
+    "duplex"
+  ],
+  "license": "MIT",
+  "author": "Tristack Technologies LLP",
+  "contributors": [
+    "cyberprince96"
+  ],
+  "homepage": "https://github.com/CyberPrince96/tristack-ai-caller#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CyberPrince96/tristack-ai-caller.git"
+  },
+  "bugs": {
+    "url": "https://github.com/CyberPrince96/tristack-ai-caller/issues"
+  },
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "react-native": "src/index.ts",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "expo-speech": "*",
+    "expo-speech-recognition": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "peerDependenciesMeta": {
+    "expo-audio": {
+      "optional": true
+    },
+    "expo-intent-launcher": {
+      "optional": true
+    },
+    "expo-web-browser": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "expo-audio": "^57.0.4",
+    "expo-intent-launcher": "^57.0.1",
+    "expo-speech": "^57.0.2",
+    "expo-speech-recognition": "^57.0.0",
+    "react": "^19.2.8",
+    "react-native": "^0.86.3",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
